@@ -267,7 +267,7 @@ class abu_area3(Node):
 		success, img = self.trackball.read()
 		if success:
 			
-			result_img, sult = predict_and_detect(model, img, classes=[], conf=0.5)
+			result_img, sult = predict_and_detect(model, img, classes=[], conf=0.8)
 			result_img, center_screen_x = draw_center_line(result_img)  # มีค่ากลางของจอ center_pic_x
 
 
@@ -318,11 +318,11 @@ class abu_area3(Node):
 							self.Publish_msg_Twist(-0.4,0.0,0.0)
 						else :
 							orientation_count = self.state_delay - 25
-							if orientation_count <= 105: # turn right 180 degrees
+							if orientation_count <= 50: # turn right 180 degrees
 								self.Publish_msg_Twist(0.0,0.0,0.5)
-							elif orientation_count <= 315:
+							elif orientation_count <= 150:
 								self.Publish_msg_Twist(0.0,0.0,-0.5) # turn left 360 degrees
-							elif orientation_count <= 420:
+							elif orientation_count <= 200:
 								self.Publish_msg_Twist(0.0,0.0,0.5) # turn right 180 degrees
 							else:
 								self.state_delay = 0
@@ -357,20 +357,29 @@ class abu_area3(Node):
 							self.ball_feed_stopped = True
 							self.Command_ball_feed('stop')	
 							self.Publish_msg_Twist(0.0, 0.0, 0.0)
-							self.balltrack_fsm = 255
+							self.balltrack_fsm = 20
 
 					# Reject ball
 					if self.ball_ar == 2:
 						print('State:Feed ball reject')
 						self.balltrack_fsm = 10
 
-				case 10:# Wait for ball out
+				case 10: # Wait for ball out
 					print('State:Ball out')
 					if self.ball_out_stat == 1:
 						self.ball_out_stat = 0
 						self.balltrack_fsm = 0	
 
-				case 255:# Stop case
+				case 20: # Back-off recovery to detect another ball
+					self.state_delay += 1
+					self.Publish_msg_Twist(-0.4, 0.0, 0.0)
+					if(self.state_delay > 25):
+						self.state_delay = 0
+						self.Publish_msg_Twist(0.0, 0.0, 0.0)
+						self.balltrack_fsm = 0
+						
+
+				case 255: # Stop case
 					print('State:Stop case')
 					self.balltrack_fsm = 0
 
